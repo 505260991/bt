@@ -2,7 +2,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, Response
 import httpx
 
 app = FastAPI()
@@ -102,10 +102,9 @@ async def img(url: str):
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
             r = await client.get(url, headers=headers)
-            if r.status_code >= 400:
-                return RedirectResponse(url=url, status_code=307)
+            r.raise_for_status()
 
             media_type = r.headers.get("content-type", "image/jpeg").split(";")[0]
             return Response(content=r.content, media_type=media_type)
-    except httpx.HTTPError:
-        return RedirectResponse(url=url, status_code=307)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"image fetch failed: {exc}") from exc
