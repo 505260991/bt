@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>影视搜索</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #0f172a;
+    font-family: Arial;
+    color: #fff;
+}
+
+/* 顶部 */
+.header {
+    padding: 20px;
+    text-align: center;
+    background: #020617;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.header input {
+    width: 300px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+}
+
+.header button {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    background: #22c55e;
+    color: #000;
+    cursor: pointer;
+}
+
+/* 网格 */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+/* 卡片 */
+.card {
+    background: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: 0.3s;
+    position: relative;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* 海报 */
+.poster {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+}
+
+/* 标题 */
+.title {
+    padding: 10px;
+    font-size: 14px;
+}
+
+/* 评分角标 */
+.rate {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #16a34a;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+/* 弹窗 */
+.modal {
+    position: fixed;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    background: #020617;
+    display: none;
+    overflow: auto;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.seed {
+    background: #1e293b;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+button.copy {
+    margin-top: 5px;
+    background: #22c55e;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>🎬 影视搜索</h2>
+    <input id="q" placeholder="输入影视名称">
+    <button onclick="search()">搜索</button>
+</div>
+
+<div class="grid" id="list"></div>
+
+<div class="modal" id="modal"></div>
+
+<script>
+const API = "http://127.0.0.1:8000"
+
+async function search() {
+    let q = document.getElementById("q").value
+    let res = await fetch(`${API}/search?q=${q}`)
+    let data = await res.json()
+
+    let html = ""
+
+    data.forEach(v => {
+        html += `
+        <div class="card" onclick="detail(${v.id})">
+            <img class="poster" src="${API}/img?url=${v.cover}">
+            <div class="rate">⭐ ${v.rate || "-"}</div>
+            <div class="title">${v.title}</div>
+        </div>
+        `
+    })
+
+    document.getElementById("list").innerHTML = html
+}
+
+
+async function detail(id) {
+    let res = await fetch(`${API}/detail?id=${id}`)
+    let data = await res.json()
+
+    let html = `<h2>磁力资源</h2>`
+
+    data.forEach(v => {
+        html += `
+        <div class="seed">
+            <p>${v.name}</p>
+            <p>${v.size} | ${v.quality}</p>
+            <button class="copy" onclick="copy('${v.magnet}')">复制磁力</button>
+        </div>
+        `
+    })
+
+    let modal = document.getElementById("modal")
+    modal.innerHTML = html
+    modal.style.display = "block"
+}
+
+
+function copy(text) {
+    navigator.clipboard.writeText(text)
+    alert("已复制")
+}
+
+// 点击外面关闭
+window.onclick = function(e) {
+    let modal = document.getElementById("modal")
+    if (e.target === modal) {
+        modal.style.display = "none"
+    }
+}
+</script>
+
+</body>
+</html>

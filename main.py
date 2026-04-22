@@ -1,0 +1,76 @@
+from fastapi import FastAPI, Query
+from fastapi.responses import Response
+import httpx
+
+app = FastAPI()
+
+BASE = "https://web5.mukaku.com/prod/api/v1/"
+APP_ID = "83768d9ad4"
+IDENTITY = "23734adac0301bccdcb107c4aa21f96c"
+
+
+def get_params(extra: dict):
+    return {
+        "app_id": APP_ID,
+        "identity": IDENTITY,
+        **extra
+    }
+
+
+# 🔍 搜索接口
+@app.get("/search")
+async def search(q: str, page: int = 1):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            BASE + "getVideoList",
+            params=get_params({
+                "sb": q,
+                "page": page,
+                "limit": 24
+            })
+        )
+        data = r.json()
+
+    result = []
+    for v in data.get("data", {}).get("data", []):
+        result.append({
+            "id": v.get("doub_id"),
+            "title": v.get("title"),
+            "cover": v.get("cover") or v.get("poster"),
+            "rate": v.get("rate")
+        })
+
+    return result
+
+
+# 📄 详情 + 磁力
+@app.get("/detail")
+async def detail(id: int):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            BASE + "getVideoDetail",
+            params=get_params({"id": id})
+        )
+        data = r.json()
+
+    seeds = data.get("data", {}).get("all_seeds", [])
+
+    result = []
+    for s in seeds:
+        if str(s.get("zlink", "")).startswith("magnet:"):
+            result.append({
+                "name": s.get("zname"),
+                "size": s.get("zsize"),
+                "quality": s.get("zqxd"),
+                "magnet": s.get("zlink")
+            })
+
+    return result
+
+
+# 🖼 图片代理（防盗链）
+@app.get("/img")
+async def img(url: str):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(url)
+        return Response(content=r.content, media_type="image/jpeg")
