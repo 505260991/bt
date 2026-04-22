@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 import httpx
 
@@ -77,6 +77,18 @@ async def detail(id: int):
 # 🖼 图片代理（防盗链）
 @app.get("/img")
 async def img(url: str):
-    async with httpx.AsyncClient() as client:
-        r = await client.get(url)
-        return Response(content=r.content, media_type="image/jpeg")
+    if not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="invalid image url")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://web5.mukaku.com/",
+    }
+
+    async with httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
+        r = await client.get(url, headers=headers)
+        if r.status_code >= 400:
+            raise HTTPException(status_code=502, detail="image fetch failed")
+
+        media_type = r.headers.get("content-type", "image/jpeg").split(";")[0]
+        return Response(content=r.content, media_type=media_type)

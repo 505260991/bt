@@ -144,7 +144,7 @@ async function search() {
     data.forEach(v => {
         html += `
         <div class="card" onclick="detail(${v.id})">
-            <img class="poster" src="${API}/img?url=${v.cover}">
+            <img class="poster" src="${API}/img?url=${encodeURIComponent(v.cover || "")}">
             <div class="rate">⭐ ${v.rate || "-"}</div>
             <div class="title">${v.title}</div>
         </div>
