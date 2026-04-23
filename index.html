@@ -132,7 +132,7 @@ button.copy {
 <div class="modal" id="modal"></div>
 
 <script>
-const API = "http://127.0.0.1:8000"
+const API = ""
 
 async function search() {
     let q = document.getElementById("q").value
@@ -144,7 +144,7 @@ async function search() {
     data.forEach(v => {
         html += `
         <div class="card" onclick="detail(${v.id})">
-            <img class="poster" src="${API}/img?url=${v.cover}">
+            <img class="poster" src="${API}/img?url=${encodeURIComponent(v.cover || "")}">
             <div class="rate">⭐ ${v.rate || "-"}</div>
             <div class="title">${v.title}</div>
         </div>
